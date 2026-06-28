@@ -1,26 +1,68 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+  --background: #fff6ed; /* warm paper */
+  --foreground: #181410; /* ink */
+  --surface: #ffffff;
+  --muted: #6e6258; /* warm gray */
+  --border: #eaddcc;
+  --accent: #ff4d12; /* vermillion fire */
+  --accent-foreground: #ffffff;
+
+  /* emil easing curves */
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
+  --ease-drawer: cubic-bezier(0.32, 0.72, 0, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* Marker highlight: a fiery swash behind a word */
+.marker {
+  background: linear-gradient(
+    transparent 12%,
+    var(--accent) 12%,
+    var(--accent) 88%,
+    transparent 88%
+  );
+  color: var(--accent-foreground);
+  margin-top: 1rem;
+  padding: 0.1em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+/* Top progress bar: fills left→right, crawls toward the end while loading */
+@keyframes topload {
+  0% { transform: scaleX(0); }
+  50% { transform: scaleX(0.65); }
+  100% { transform: scaleX(0.92); }
+}
+.top-loader {
+  transform-origin: left;
+  animation: topload 8s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
 }
