@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
-import { createClient } from "@/lib/supabase/server";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,21 +12,11 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export async function generateMetadata(): Promise<Metadata> {
-  const supabase = await createClient();
-  const { data } = await supabase
-    .from("site_settings")
-    .select("name, hero_role, favicon_url")
-    .eq("id", 1)
-    .single();
-
-  const name = data?.name ?? "Portfolio";
-  return {
-    title: `${name} — ${data?.hero_role ?? "Software Engineer"}`,
-    description: `Portfolio of ${name}.`,
-    icons: data?.favicon_url ? { icon: data.favicon_url } : undefined,
-  };
-}
+export const metadata: Metadata = {
+  title: "Fasya Raihan Maulana — Software Engineer",
+  description:
+    "Portfolio of Fasya Raihan Maulana (Ray), a software engineer building backend systems, web apps, and AI-assisted products.",
+};
 
 export default function RootLayout({
   children,

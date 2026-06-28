@@ -49,7 +49,6 @@ export type Database = {
         Row: {
           avatar_url: string | null
           bio: string | null
-          favicon_url: string | null
           email: string
           hero_role: string
           hero_subtitle: string
@@ -63,7 +62,6 @@ export type Database = {
         Insert: {
           avatar_url?: string | null
           bio?: string | null
-          favicon_url?: string | null
           email: string
           hero_role: string
           hero_subtitle: string
@@ -77,7 +75,6 @@ export type Database = {
         Update: {
           avatar_url?: string | null
           bio?: string | null
-          favicon_url?: string | null
           email?: string
           hero_role?: string
           hero_subtitle?: string

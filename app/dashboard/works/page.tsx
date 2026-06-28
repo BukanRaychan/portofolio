@@ -1,7 +1,14 @@
+/* eslint-disable @next/next/no-img-element */
 import { createClient } from "@/lib/supabase/server";
 import type { Work } from "@/lib/database.types";
-import { saveWork, deleteWork } from "../actions";
+import {
+  saveWork,
+  deleteWork,
+  addWorkImage,
+  deleteWorkImage,
+} from "../actions";
 import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "../ui";
+import { FileInput } from "../FileInput";
 
 function WorkForm({ work }: { work?: Work }) {
   return (
@@ -46,21 +53,61 @@ function WorkForm({ work }: { work?: Work }) {
       <Field label="Description">
         <Textarea name="description" defaultValue={work?.description ?? ""} />
       </Field>
-      <Field label="Image URLs (comma or newline separated)">
-        <Textarea name="images" defaultValue={work?.images.join("\n") ?? ""} />
-      </Field>
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Place logo URL">
           <Input name="place_logo_url" defaultValue={work?.place_logo_url ?? ""} />
         </Field>
-        <Field label="…or upload place logo">
-          <Input name="logo_file" type="file" accept="image/*" />
+        <Field label="…or upload place logo (takes priority)">
+          <FileInput name="logo_file" />
         </Field>
       </div>
-      <div className="flex items-center gap-3">
-        <SaveButton>{work ? "Save" : "Add work"}</SaveButton>
-      </div>
+      <SaveButton>{work ? "Save" : "Add work"}</SaveButton>
     </form>
+  );
+}
+
+function WorkImages({ work }: { work: Work }) {
+  return (
+    <div className="flex flex-col gap-3 border-t border-border pt-4">
+      <span className="text-xs font-medium text-muted">Images</span>
+      {work.images.length > 0 && (
+        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4">
+          {work.images.map((url) => (
+            <div
+              key={url}
+              className="group relative aspect-video overflow-hidden rounded-lg border border-border"
+            >
+              <img src={url} alt="" className="h-full w-full object-cover" />
+              <form
+                action={deleteWorkImage}
+                className="absolute right-1 top-1 opacity-0 transition-opacity duration-150 group-hover:opacity-100"
+              >
+                <input type="hidden" name="work_id" value={work.id} />
+                <input type="hidden" name="url" value={url} />
+                <button className="rounded-md bg-background/90 px-1.5 py-0.5 text-xs font-medium text-accent outline-none transition-transform duration-150 ease-[var(--ease-out)] active:scale-[0.94] focus-visible:ring-2 focus-visible:ring-accent">
+                  Delete
+                </button>
+              </form>
+            </div>
+          ))}
+        </div>
+      )}
+      <form
+        action={addWorkImage}
+        className="flex flex-col gap-2 rounded-lg border border-dashed border-border p-3"
+      >
+        <input type="hidden" name="work_id" value={work.id} />
+        <div className="grid gap-2 sm:grid-cols-2">
+          <Field label="Image URL">
+            <Input name="image_url" placeholder="https://…" />
+          </Field>
+          <Field label="…or upload image (takes priority)">
+            <FileInput name="image_file" />
+          </Field>
+        </div>
+        <SaveButton>Add image</SaveButton>
+      </form>
+    </div>
   );
 }
 
@@ -80,15 +127,16 @@ export default async function WorksPage() {
       <h2 className="text-lg font-semibold tracking-tight">{heading}</h2>
       {items.map((work) => (
         <Card key={work.id}>
-          <details>
+          <details name="works">
             <summary className="cursor-pointer font-medium">
               {work.title}
             </summary>
             <div className="mt-4 flex flex-col gap-4">
               <WorkForm work={work} />
+              <WorkImages work={work} />
               <form action={deleteWork}>
                 <input type="hidden" name="id" value={work.id} />
-                <DeleteButton />
+                <DeleteButton>Delete work</DeleteButton>
               </form>
             </div>
           </details>

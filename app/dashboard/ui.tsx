@@ -24,20 +24,20 @@ export function SaveButton({ children = "Save" }: { children?: ReactNode }) {
   return (
     <button
       type="submit"
-      className="w-fit rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background transition-transform duration-150 ease-out active:scale-[0.97]"
+      className="w-fit rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background outline-none transition-[transform,background-color] duration-150 ease-[var(--ease-out)] hover:bg-foreground/90 active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-foreground focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
       {children}
     </button>
   );
 }
 
-export function DeleteButton() {
+export function DeleteButton({ children = "Delete" }: { children?: ReactNode }) {
   return (
     <button
       type="submit"
-      className="w-fit rounded-lg border border-border px-3 py-2 text-sm text-muted transition-colors hover:border-accent hover:text-accent"
+      className="w-fit rounded-lg border border-border px-3 py-2 text-sm text-muted outline-none transition-[transform,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-accent hover:text-accent active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
     >
-      Delete
+      {children}
     </button>
   );
 }

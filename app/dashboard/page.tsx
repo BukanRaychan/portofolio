@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Socials } from "@/lib/database.types";
 import { saveSettings } from "./actions";
 import { Field, Input, Textarea, SaveButton, Card } from "./ui";
+import { FileInput } from "./FileInput";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -42,15 +43,7 @@ export default async function SettingsPage() {
             <Input name="avatar_url" defaultValue={data.avatar_url ?? ""} />
           </Field>
           <Field label="…or upload avatar">
-            <Input name="avatar_file" type="file" accept="image/*" />
-          </Field>
-        </div>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="Favicon URL (browser tab icon)">
-            <Input name="favicon_url" defaultValue={data.favicon_url ?? ""} />
-          </Field>
-          <Field label="…or upload favicon (.ico / .png / .svg)">
-            <Input name="favicon_file" type="file" accept="image/x-icon,image/png,image/svg+xml" />
+            <FileInput name="avatar_file" />
           </Field>
         </div>
         <Field label="Interests (comma or newline separated)">

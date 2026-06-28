@@ -23,7 +23,7 @@ export default async function DashboardLayout({
   }
 
   return (
-    <div className="mx-auto min-h-[100dvh] max-w-6xl px-5 py-10 sm:px-8">
+    <div className="no-scrollbar mx-auto h-[100dvh] max-w-6xl overflow-y-auto px-5 py-10 sm:px-8">
       <header className="mb-10 flex flex-wrap items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-semibold tracking-tight">Dashboard</h1>

@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import type { Education } from "@/lib/database.types";
 import { saveEducation, deleteEducation } from "../actions";
 import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "../ui";
+import { FileInput } from "../FileInput";
 
 function EducationForm({ item }: { item?: Education }) {
   return (
@@ -24,7 +25,7 @@ function EducationForm({ item }: { item?: Education }) {
           <Input name="logo_url" defaultValue={item?.logo_url ?? ""} />
         </Field>
         <Field label="…or upload logo">
-          <Input name="logo_file" type="file" accept="image/*" />
+          <FileInput name="logo_file" />
         </Field>
         <Field label="Sort order">
           <Input name="sort_order" type="number" defaultValue={item?.sort_order ?? 0} />
