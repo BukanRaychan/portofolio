@@ -93,8 +93,8 @@ export function Hero({
         </motion.div>
 
         <motion.div
-          initial={reduce ? false : { opacity: 0, scale: 0.94, rotate: -4 }}
-          animate={{ opacity: 1, scale: 1, rotate: -3 }}
+          initial={reduce ? false : { opacity: 0, scale: 0.2, rotate: 0 }}
+          animate={{ opacity: 1, scale: 1, rotate: -2 }}
           transition={{ duration: 0.8, ease: [0.23, 1, 0.32, 1], delay: 0.15 }}
           className="relative mx-auto hidden aspect-4/5 w-full max-w-xs overflow-hidden rounded-3xl border border-border md:block"
         >
@@ -106,7 +106,6 @@ export function Hero({
             sizes="20rem"
             className="object-cover"
           />
-          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-background/70 to-transparent" />
         </motion.div>
       </div>
     </section>
