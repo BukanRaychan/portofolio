@@ -16,7 +16,7 @@ export function FileInput({
 
   return (
     <label
-      className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 ease-[var(--ease-out)] focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 focus-within:ring-offset-background ${
+      className={`flex cursor-pointer items-center gap-2 rounded-lg border bg-background px-3 py-2 text-sm outline-none transition-colors duration-150 ease-out focus-within:ring-2 focus-within:ring-accent focus-within:ring-offset-2 focus-within:ring-offset-background ${
         selected ? "border-accent" : "border-border hover:border-muted"
       }`}
     >

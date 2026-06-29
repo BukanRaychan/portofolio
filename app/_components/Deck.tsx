@@ -8,7 +8,7 @@ import {
   type PanInfo,
   type Variants,
 } from "motion/react";
-import { List, X } from "@phosphor-icons/react";
+import { CaretDownIcon, ArrowDown, ArrowUp } from "@phosphor-icons/react";
 import type { Portfolio } from "@/lib/data";
 import type { Socials } from "@/lib/database.types";
 import { Hero } from "./Hero";
@@ -23,11 +23,27 @@ const SLIDES = [
   { id: "contact", label: "Contact" },
 ];
 
+// ponytail: accumulated wheel delta (px) needed at a slide edge before paginating.
+// Bump if it still feels jumpy; lower if it feels sticky.
+const THRESHOLD = 960;
+
 export function Deck({ data }: { data: Portfolio }) {
   const reduce = useReducedMotion();
   const [[index, dir], setState] = useState<[number, number]>([0, 0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const lock = useRef(false);
+  const acc = useRef(0);
+  const accDir = useRef(0);
+  const settle = useRef<number>(0);
+  // Edge-scroll progress (0–1) and direction, shown as an intent meter.
+  const [intent, setIntent] = useState<{ progress: number; dir: number } | null>(null);
+
+  const resetIntent = () => {
+    acc.current = 0;
+    accDir.current = 0;
+    clearTimeout(settle.current);
+    setIntent(null);
+  };
 
   const paginate = (next: number) => {
     const clamped = Math.max(0, Math.min(SLIDES.length - 1, next));
@@ -51,7 +67,9 @@ export function Deck({ data }: { data: Portfolio }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Wheel: scroll within a slide until its edge, then the next nudge paginates.
+  // Wheel: scroll within a slide until its edge, then keep scrolling to fill an
+  // intent meter — paginates only once accumulated delta passes THRESHOLD, so a
+  // single nudge can't skip a section before it's read. A pause resets it.
   const onWheel = (e: React.WheelEvent) => {
     if (menuOpen || lock.current || Math.abs(e.deltaY) < 4) return;
     const goingDown = e.deltaY > 0;
@@ -62,19 +80,40 @@ export function Deck({ data }: { data: Portfolio }) {
       if ((oy === "auto" || oy === "scroll") && el.scrollHeight > el.clientHeight + 1) {
         const atTop = el.scrollTop <= 0;
         const atBottom = el.scrollTop + el.clientHeight >= el.scrollHeight - 1;
-        if (!((goingDown && atBottom) || (!goingDown && atTop))) return;
+        if (!((goingDown && atBottom) || (!goingDown && atTop))) {
+          resetIntent();
+          return;
+        }
         break;
       }
       el = el.parentElement;
     }
 
-    const target = index + (goingDown ? 1 : -1);
-    if (target < 0 || target >= SLIDES.length) return;
-    lock.current = true;
-    paginate(target);
-    window.setTimeout(() => {
-      lock.current = false;
-    }, 800);
+    const dir = goingDown ? 1 : -1;
+    const target = index + dir;
+    if (target < 0 || target >= SLIDES.length) {
+      resetIntent();
+      return;
+    }
+
+    if (accDir.current !== dir) acc.current = 0;
+    accDir.current = dir;
+    acc.current += Math.abs(e.deltaY);
+
+    clearTimeout(settle.current);
+    settle.current = window.setTimeout(resetIntent, 320);
+
+    if (acc.current >= THRESHOLD) {
+      lock.current = true;
+      resetIntent();
+      paginate(target);
+      window.setTimeout(() => {
+        lock.current = false;
+      }, 800);
+      return;
+    }
+
+    setIntent({ progress: Math.min(1, acc.current / THRESHOLD), dir });
   };
 
   const onDragEnd = (_e: unknown, info: PanInfo) => {
@@ -116,12 +155,6 @@ export function Deck({ data }: { data: Portfolio }) {
     <Contact key="contact" email={settings.email} socials={socials} />,
   ];
 
-  const monogram = settings.name
-    .split(" ")
-    .slice(0, 3)
-    .map((p) => p[0])
-    .join("");
-
   const menuContainer: Variants = {
     hidden: {},
     show: { transition: { staggerChildren: 0.06, delayChildren: 0.08 } },
@@ -138,28 +171,23 @@ export function Deck({ data }: { data: Portfolio }) {
       onWheel={onWheel}
       className="relative h-dvh w-screen overflow-hidden"
     >
-      {/* Brand */}
-      <div className="absolute left-5 top-5 z-30 sm:left-8 sm:top-7">
-        <span className="font-mono text-sm font-semibold tracking-tight">
-          {monogram}
-          <span className="text-accent">.</span>
-        </span>
-      </div>
-
-      {/* Hamburger (top-right, always visible) */}
+      {/* Menu toggle — top-left, accent on mobile / background on desktop */}
       <button
         onClick={() => setMenuOpen((o) => !o)}
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
-        className={`absolute right-5 top-5 z-50 grid size-10 place-items-center rounded-full border 
-        border-foreground text-foreground transition-transform duration-150 ease-out active:scale-[0.94] 
-        sm:right-8 sm:top-6 ${!menuOpen ? "bg-accent" : "bg-background"}`}
+        className={`absolute left-5 top-5 z-50 grid size-10 place-items-center 
+        transition-transform duration-150 ease-out active:scale-[0.94]
+        sm:left-8 sm:top-6 ${menuOpen ? "" : ""}`}
       >
-        {menuOpen ? (
-          <X weight="bold" className="size-5 text-foreground" />
-        ) : (
-          <List weight="bold" className="size-5 text-surface" />
-        )}
+        <CaretDownIcon
+          weight="bold"
+          className={`size-5 transition-transform duration-200 ease-out ${
+            menuOpen
+              ? "rotate-180 text-background"
+              : "text-accent"
+          }`}
+        />
       </button>
 
       {/* Slides — right gutter reserved so the rail never overlaps content */}
@@ -180,6 +208,34 @@ export function Deck({ data }: { data: Portfolio }) {
         >
           {slideContent[index]}
         </motion.div>
+      </AnimatePresence>
+
+      {/* Scroll-intent meter — fills as you keep scrolling past a slide edge */}
+      <AnimatePresence>
+        {intent && (
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 8 }}
+            transition={{ duration: 0.2, ease: [0.23, 1, 0.32, 1] }}
+            className="pointer-events-none absolute bottom-20 left-1/2 z-30 flex -translate-x-1/2 flex-col items-center gap-2 sm:bottom-3.5"
+          >
+            <span className="flex items-center gap-1.5 rounded-full border border-border bg-surface/90 px-3.5 py-1.5 text-xs font-medium backdrop-blur-md">
+              {intent.dir > 0 ? (
+                <ArrowDown weight="bold" className="size-3.5 text-accent" />
+              ) : (
+                <ArrowUp weight="bold" className="size-3.5 text-accent" />
+              )}
+              {SLIDES[index + intent.dir]?.label}
+            </span>
+            <span className="relative h-1 w-54 overflow-hidden rounded-full bg-border">
+              <span
+                className="absolute inset-y-0 left-0 rounded-full bg-accent"
+                style={{ width: `${intent.progress * 100}%` }}
+              />
+            </span>
+          </motion.div>
+        )}
       </AnimatePresence>
 
       {/* Desktop progress rail — dots + numbers only, label on hover */}
@@ -211,7 +267,7 @@ export function Deck({ data }: { data: Portfolio }) {
                 {activeItem ? (
                   <motion.span
                     layoutId="nav-active"
-                    className="h-[3px] w-9 rounded-full bg-accent"
+                    className="h-0.75 w-9 rounded-full bg-accent"
                     transition={{ type: "spring", duration: 0.5, bounce: 0.2 }}
                   />
                 ) : (
