@@ -1,6 +1,6 @@
 import { createClient } from "@/lib/supabase/server";
 import type { TechStack } from "@/lib/database.types";
-import { SwapyTech } from "./SwapyTech";
+import { TechManager } from "../TechManager";
 
 export default async function TechPage() {
   const supabase = await createClient();
@@ -8,7 +8,6 @@ export default async function TechPage() {
     .from("tech_stack")
     .select("*")
     .order("sort_order");
-  const items = (data ?? []) as TechStack[];
 
-  return <SwapyTech techs={items} />;
+  return <TechManager techs={(data ?? []) as TechStack[]} />;
 }

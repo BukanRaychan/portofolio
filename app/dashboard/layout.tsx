@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { signOut } from "./actions";
 import { DashboardNav } from "./DashboardNav";
+import { Toaster } from "./Toast";
 
 export default async function DashboardLayout({
   children,
@@ -49,6 +50,7 @@ export default async function DashboardLayout({
       <DashboardNav />
 
       {children}
+      <Toaster />
     </div>
   );
 }

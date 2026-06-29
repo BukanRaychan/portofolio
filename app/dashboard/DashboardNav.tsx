@@ -43,9 +43,9 @@ export function DashboardNav() {
               aria-current={active ? "page" : undefined}
               className={`rounded-full px-4 py-2 font-medium transition-colors duration-200 ${
                 active
-                  ? "bg-foreground text-background"
+                  ? "bg-accent text-accent-foreground"
                   : loading
-                    ? "bg-foreground/[0.08] text-foreground"
+                    ? "bg-accent/10 text-accent"
                     : "text-muted hover:bg-foreground/[0.06] hover:text-foreground"
               }`}
             >

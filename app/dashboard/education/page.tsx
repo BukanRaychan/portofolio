@@ -3,10 +3,15 @@ import type { Education } from "@/lib/database.types";
 import { saveEducation, deleteEducation } from "../actions";
 import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "../ui";
 import { FileInput } from "../FileInput";
+import { ActionForm } from "../ActionForm";
 
 function EducationForm({ item }: { item?: Education }) {
   return (
-    <form action={saveEducation} className="flex flex-col gap-4">
+    <ActionForm
+      action={saveEducation}
+      resetOnSuccess={!item}
+      className="flex flex-col gap-4"
+    >
       {item && <input type="hidden" name="id" value={item.id} />}
       <div className="grid gap-4 sm:grid-cols-2">
         <Field label="Institution">
@@ -35,7 +40,7 @@ function EducationForm({ item }: { item?: Education }) {
         <Textarea name="description" defaultValue={item?.description ?? ""} />
       </Field>
       <SaveButton>{item ? "Save" : "Add education"}</SaveButton>
-    </form>
+    </ActionForm>
   );
 }
 
@@ -63,10 +68,10 @@ export default async function EducationPage() {
       {items.map((item) => (
         <Card key={item.id}>
           <EducationForm item={item} />
-          <form action={deleteEducation} className="mt-3">
+          <ActionForm action={deleteEducation} className="mt-3">
             <input type="hidden" name="id" value={item.id} />
             <DeleteButton />
-          </form>
+          </ActionForm>
         </Card>
       ))}
     </div>

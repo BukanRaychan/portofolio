@@ -21,6 +21,26 @@ async function requireAdmin() {
 
 type Client = Awaited<ReturnType<typeof requireAdmin>>;
 
+// Result returned to forms (via useActionState) so the UI can toast success/error.
+export type ActionResult = { ok: boolean; message: string };
+
+// Wraps a form action's DB work: requireAdmin runs first (its redirect must
+// propagate, not be swallowed), then anything that throws becomes an error toast.
+async function run(
+  fn: (supabase: Client) => Promise<string>,
+): Promise<ActionResult> {
+  const supabase = await requireAdmin();
+  try {
+    const message = await fn(supabase);
+    return { ok: true, message };
+  } catch (e) {
+    return {
+      ok: false,
+      message: e instanceof Error ? e.message : "Something went wrong",
+    };
+  }
+}
+
 function toArray(value: FormDataEntryValue | null): string[] {
   if (!value) return [];
   return String(value)
@@ -75,102 +95,130 @@ function done(path = "/dashboard") {
 }
 
 // ---- Site settings ----
-export async function saveSettings(formData: FormData) {
-  const supabase = await requireAdmin();
-  const { data: prev } = await supabase
-    .from("site_settings")
-    .select("avatar_url")
-    .eq("id", 1)
-    .single();
+export async function saveSettings(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const { data: prev } = await supabase
+      .from("site_settings")
+      .select("avatar_url")
+      .eq("id", 1)
+      .single();
 
-  const uploadedAvatar = await uploadIfPresent(
-    supabase,
-    formData.get("avatar_file"),
-  );
-  const avatar_url = uploadedAvatar ?? str(formData.get("avatar_url"));
+    const uploadedAvatar = await uploadIfPresent(
+      supabase,
+      formData.get("avatar_file"),
+    );
+    const avatar_url = uploadedAvatar ?? str(formData.get("avatar_url"));
 
-  await supabase
-    .from("site_settings")
-    .update({
-      name: str(formData.get("name")) ?? "",
-      hero_title: str(formData.get("hero_title")) ?? "",
-      hero_role: str(formData.get("hero_role")) ?? "",
-      hero_subtitle: str(formData.get("hero_subtitle")) ?? "",
-      bio: str(formData.get("bio")),
-      avatar_url,
-      email: str(formData.get("email")) ?? "",
-      interests: toArray(formData.get("interests")),
-      socials: {
-        github: str(formData.get("github")),
-        linkedin: str(formData.get("linkedin")),
-        instagram: str(formData.get("instagram")),
-        tiktok: str(formData.get("tiktok")),
-      },
-    })
-    .eq("id", 1);
+    await supabase
+      .from("site_settings")
+      .update({
+        name: str(formData.get("name")) ?? "",
+        hero_title: str(formData.get("hero_title")) ?? "",
+        hero_role: str(formData.get("hero_role")) ?? "",
+        hero_subtitle: str(formData.get("hero_subtitle")) ?? "",
+        bio: str(formData.get("bio")),
+        avatar_url,
+        email: str(formData.get("email")) ?? "",
+        interests: toArray(formData.get("interests")),
+        socials: {
+          github: str(formData.get("github")),
+          linkedin: str(formData.get("linkedin")),
+          instagram: str(formData.get("instagram")),
+          tiktok: str(formData.get("tiktok")),
+        },
+      })
+      .eq("id", 1);
 
-  if (prev?.avatar_url && prev.avatar_url !== avatar_url) {
-    await removeStorage(supabase, prev.avatar_url);
-  }
-  done();
+    if (prev?.avatar_url && prev.avatar_url !== avatar_url) {
+      await removeStorage(supabase, prev.avatar_url);
+    }
+    done();
+    return "Settings saved";
+  });
 }
 
 // ---- Works ----
-export async function saveWork(formData: FormData) {
-  const supabase = await requireAdmin();
-  const id = str(formData.get("id"));
-  const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
-  const place_logo_url = uploaded ?? str(formData.get("place_logo_url"));
+export async function saveWork(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = str(formData.get("id"));
+    const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
+    const place_logo_url = uploaded ?? str(formData.get("place_logo_url"));
+    const category = str(formData.get("category")) ?? "project";
 
-  // images are managed separately (add/delete), not touched on save.
-  const row = {
-    category: str(formData.get("category")) ?? "project",
-    title: str(formData.get("title")) ?? "",
-    position: str(formData.get("position")),
-    place: str(formData.get("place")),
-    place_logo_url,
-    period: str(formData.get("period")),
-    description: str(formData.get("description")),
-    link: str(formData.get("link")),
-    technologies: toArray(formData.get("technologies")),
-    sort_order: Number(formData.get("sort_order") ?? 0),
-  };
+    // sort_order is owned by drag-to-reorder, not the form. images too.
+    const row = {
+      category,
+      title: str(formData.get("title")) ?? "",
+      position: str(formData.get("position")),
+      place: str(formData.get("place")),
+      place_logo_url,
+      period: str(formData.get("period")),
+      description: str(formData.get("description")),
+      link: str(formData.get("link")),
+      technologies: toArray(formData.get("technologies")),
+    };
 
-  if (id) {
-    const { data: prev } = await supabase
+    if (id) {
+      const { data: prev } = await supabase
+        .from("works")
+        .select("place_logo_url")
+        .eq("id", id)
+        .single();
+      await supabase.from("works").update(row).eq("id", id);
+      if (prev?.place_logo_url && prev.place_logo_url !== place_logo_url) {
+        await removeStorage(supabase, prev.place_logo_url);
+      }
+      done("/dashboard/works");
+      return "Work saved";
+    }
+
+    const { count } = await supabase
       .from("works")
-      .select("place_logo_url")
+      .select("*", { count: "exact", head: true })
+      .eq("category", category);
+    await supabase.from("works").insert({ ...row, sort_order: count ?? 0 });
+    done("/dashboard/works");
+    return "Work added";
+  });
+}
+
+export async function deleteWork(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = String(formData.get("id"));
+    const { data } = await supabase
+      .from("works")
+      .select("place_logo_url, images")
       .eq("id", id)
       .single();
-    await supabase.from("works").update(row).eq("id", id);
-    if (prev?.place_logo_url && prev.place_logo_url !== place_logo_url) {
-      await removeStorage(supabase, prev.place_logo_url);
-    }
-  } else {
-    await supabase.from("works").insert(row);
-  }
-  done("/dashboard/works");
+    await supabase.from("works").delete().eq("id", id);
+    await removeStorage(
+      supabase,
+      data?.place_logo_url ?? null,
+      ...(data?.images ?? []),
+    );
+    done("/dashboard/works");
+    return "Work deleted";
+  });
 }
 
-export async function deleteWork(formData: FormData) {
-  const supabase = await requireAdmin();
-  const id = String(formData.get("id"));
-  const { data } = await supabase
-    .from("works")
-    .select("place_logo_url, images")
-    .eq("id", id)
-    .single();
-  await supabase.from("works").delete().eq("id", id);
-  await removeStorage(supabase, data?.place_logo_url ?? null, ...(data?.images ?? []));
-  done("/dashboard/works");
-}
-
-export async function addWorkImage(formData: FormData) {
-  const supabase = await requireAdmin();
-  const workId = String(formData.get("work_id"));
-  const uploaded = await uploadIfPresent(supabase, formData.get("image_file"));
-  const url = uploaded ?? str(formData.get("image_url"));
-  if (url) {
+export async function addWorkImage(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const workId = String(formData.get("work_id"));
+    const uploaded = await uploadIfPresent(supabase, formData.get("image_file"));
+    const url = uploaded ?? str(formData.get("image_url"));
+    if (!url) throw new Error("Provide an image URL or upload a file");
     const { data } = await supabase
       .from("works")
       .select("images")
@@ -180,74 +228,100 @@ export async function addWorkImage(formData: FormData) {
       .from("works")
       .update({ images: [...(data?.images ?? []), url] })
       .eq("id", workId);
-  }
-  done("/dashboard/works");
+    done("/dashboard/works");
+    return "Image added";
+  });
 }
 
-export async function deleteWorkImage(formData: FormData) {
+export async function deleteWorkImage(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const workId = String(formData.get("work_id"));
+    const url = String(formData.get("url"));
+    const { data } = await supabase
+      .from("works")
+      .select("images")
+      .eq("id", workId)
+      .single();
+    await supabase
+      .from("works")
+      .update({ images: (data?.images ?? []).filter((u) => u !== url) })
+      .eq("id", workId);
+    await removeStorage(supabase, url);
+    done("/dashboard/works");
+    return "Image deleted";
+  });
+}
+
+// Persist a new image order from drag-to-reorder. Only revalidates the public
+// site so the dashboard keeps its optimistic order without a refetch.
+export async function reorderWorkImages(workId: string, urls: string[]) {
   const supabase = await requireAdmin();
-  const workId = String(formData.get("work_id"));
-  const url = String(formData.get("url"));
-  const { data } = await supabase
-    .from("works")
-    .select("images")
-    .eq("id", workId)
-    .single();
-  await supabase
-    .from("works")
-    .update({ images: (data?.images ?? []).filter((u) => u !== url) })
-    .eq("id", workId);
-  await removeStorage(supabase, url);
-  done("/dashboard/works");
+  await supabase.from("works").update({ images: urls }).eq("id", workId);
+  revalidatePath("/");
 }
 
 // ---- Tech stack ----
-export async function saveTech(formData: FormData) {
-  const supabase = await requireAdmin();
-  const id = str(formData.get("id"));
-  const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
-  const logo_url = uploaded ?? str(formData.get("logo_url"));
-  const row = {
-    slug: str(formData.get("slug")) ?? "",
-    name: str(formData.get("name")) ?? "",
-    logo_url,
-    needs_inversion: formData.get("needs_inversion") === "on",
-  };
+export async function saveTech(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = str(formData.get("id"));
+    const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
+    const logo_url = uploaded ?? str(formData.get("logo_url"));
+    const row = {
+      slug: str(formData.get("slug")) ?? "",
+      name: str(formData.get("name")) ?? "",
+      logo_url,
+      needs_inversion: formData.get("needs_inversion") === "on",
+    };
 
-  if (id) {
-    const { data: prev } = await supabase
-      .from("tech_stack")
-      .select("logo_url")
-      .eq("id", id)
-      .single();
-    await supabase.from("tech_stack").update(row).eq("id", id);
-    if (prev?.logo_url && prev.logo_url !== logo_url) {
-      await removeStorage(supabase, prev.logo_url);
+    if (id) {
+      const { data: prev } = await supabase
+        .from("tech_stack")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      await supabase.from("tech_stack").update(row).eq("id", id);
+      if (prev?.logo_url && prev.logo_url !== logo_url) {
+        await removeStorage(supabase, prev.logo_url);
+      }
+      done("/dashboard/tech");
+      return "Tech saved";
     }
-  } else {
+
     const { count } = await supabase
       .from("tech_stack")
       .select("*", { count: "exact", head: true });
     await supabase.from("tech_stack").insert({ ...row, sort_order: count ?? 0 });
-  }
-  done("/dashboard/tech");
+    done("/dashboard/tech");
+    return "Tech added";
+  });
 }
 
-export async function deleteTech(formData: FormData) {
-  const supabase = await requireAdmin();
-  const id = String(formData.get("id"));
-  const { data } = await supabase
-    .from("tech_stack")
-    .select("logo_url")
-    .eq("id", id)
-    .single();
-  await supabase.from("tech_stack").delete().eq("id", id);
-  await removeStorage(supabase, data?.logo_url ?? null);
-  done("/dashboard/tech");
+export async function deleteTech(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = String(formData.get("id"));
+    const { data } = await supabase
+      .from("tech_stack")
+      .select("logo_url")
+      .eq("id", id)
+      .single();
+    await supabase.from("tech_stack").delete().eq("id", id);
+    await removeStorage(supabase, data?.logo_url ?? null);
+    done("/dashboard/tech");
+    return "Tech deleted";
+  });
 }
 
 // Persist a new tech order from drag-to-reorder. Only revalidates the public
-// site — not the dashboard route — so it doesn't re-render and fight Swapy.
+// site so the dashboard keeps its optimistic order without a refetch.
 export async function reorderTech(ids: string[]) {
   const supabase = await requireAdmin();
   await Promise.all(
@@ -258,49 +332,72 @@ export async function reorderTech(ids: string[]) {
   revalidatePath("/");
 }
 
-// ---- Education ----
-export async function saveEducation(formData: FormData) {
+// Persist a new works order from drag-to-reorder (within a category).
+export async function reorderWorks(ids: string[]) {
   const supabase = await requireAdmin();
-  const id = str(formData.get("id"));
-  const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
-  const logo_url = uploaded ?? str(formData.get("logo_url"));
-  const row = {
-    institution: str(formData.get("institution")) ?? "",
-    degree: str(formData.get("degree")) ?? "",
-    period: str(formData.get("period")),
-    gpa: str(formData.get("gpa")),
-    description: str(formData.get("description")),
-    logo_url,
-    sort_order: Number(formData.get("sort_order") ?? 0),
-  };
+  await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("works").update({ sort_order: i }).eq("id", id),
+    ),
+  );
+  revalidatePath("/");
+}
 
-  if (id) {
-    const { data: prev } = await supabase
+// ---- Education ----
+export async function saveEducation(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = str(formData.get("id"));
+    const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
+    const logo_url = uploaded ?? str(formData.get("logo_url"));
+    const row = {
+      institution: str(formData.get("institution")) ?? "",
+      degree: str(formData.get("degree")) ?? "",
+      period: str(formData.get("period")),
+      gpa: str(formData.get("gpa")),
+      description: str(formData.get("description")),
+      logo_url,
+      sort_order: Number(formData.get("sort_order") ?? 0),
+    };
+
+    if (id) {
+      const { data: prev } = await supabase
+        .from("education")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      await supabase.from("education").update(row).eq("id", id);
+      if (prev?.logo_url && prev.logo_url !== logo_url) {
+        await removeStorage(supabase, prev.logo_url);
+      }
+      done("/dashboard/education");
+      return "Education saved";
+    }
+
+    await supabase.from("education").insert(row);
+    done("/dashboard/education");
+    return "Education added";
+  });
+}
+
+export async function deleteEducation(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = String(formData.get("id"));
+    const { data } = await supabase
       .from("education")
       .select("logo_url")
       .eq("id", id)
       .single();
-    await supabase.from("education").update(row).eq("id", id);
-    if (prev?.logo_url && prev.logo_url !== logo_url) {
-      await removeStorage(supabase, prev.logo_url);
-    }
-  } else {
-    await supabase.from("education").insert(row);
-  }
-  done("/dashboard/education");
-}
-
-export async function deleteEducation(formData: FormData) {
-  const supabase = await requireAdmin();
-  const id = String(formData.get("id"));
-  const { data } = await supabase
-    .from("education")
-    .select("logo_url")
-    .eq("id", id)
-    .single();
-  await supabase.from("education").delete().eq("id", id);
-  await removeStorage(supabase, data?.logo_url ?? null);
-  done("/dashboard/education");
+    await supabase.from("education").delete().eq("id", id);
+    await removeStorage(supabase, data?.logo_url ?? null);
+    done("/dashboard/education");
+    return "Education deleted";
+  });
 }
 
 // ---- Auth ----

@@ -3,6 +3,7 @@ import type { Socials } from "@/lib/database.types";
 import { saveSettings } from "./actions";
 import { Field, Input, Textarea, SaveButton, Card } from "./ui";
 import { FileInput } from "./FileInput";
+import { ActionForm } from "./ActionForm";
 
 export default async function SettingsPage() {
   const supabase = await createClient();
@@ -17,7 +18,7 @@ export default async function SettingsPage() {
 
   return (
     <Card>
-      <form action={saveSettings} className="flex flex-col gap-5">
+      <ActionForm action={saveSettings} className="flex flex-col gap-5">
         <div className="grid gap-5 sm:grid-cols-2">
           <Field label="Name">
             <Input name="name" defaultValue={data.name} />
@@ -64,7 +65,7 @@ export default async function SettingsPage() {
           </Field>
         </div>
         <SaveButton>Save settings</SaveButton>
-      </form>
+      </ActionForm>
     </Card>
   );
 }
