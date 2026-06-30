@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { DotsSixVertical } from "@phosphor-icons/react";
+import { DotsSixVertical, SortAscending } from "@phosphor-icons/react";
 import type { TechStack } from "@/lib/database.types";
 import { saveTech, deleteTech, reorderTech } from "./actions";
 import { Field, Input, SaveButton, DeleteButton, Card } from "./ui";
@@ -62,18 +62,39 @@ export function TechManager({ techs }: { techs: TechStack[] }) {
     reorderTech(newIds);
   }
 
+  function sortAlpha() {
+    const sorted = [...order].sort((a, b) =>
+      a.name.localeCompare(b.name, undefined, { sensitivity: "base" }),
+    );
+    setOrder(sorted);
+    reorderTech(sorted.map((t) => t.id));
+  }
+
   return (
     <div className="flex flex-col gap-6">
-      <details>
-        <summary className="cursor-pointer text-sm font-medium text-accent">
-          + Add new tech
-        </summary>
-        <div className="mt-4">
-          <Card>
-            <TechForm />
-          </Card>
-        </div>
-      </details>
+      <div className="flex items-center justify-between gap-3">
+        <details className="min-w-0">
+          <summary className="cursor-pointer text-sm font-medium text-accent">
+            + Add new tech
+          </summary>
+          <div className="mt-4">
+            <Card>
+              <TechForm />
+            </Card>
+          </div>
+        </details>
+
+        {order.length > 1 && (
+          <button
+            type="button"
+            onClick={sortAlpha}
+            className="inline-flex shrink-0 items-center gap-1.5 self-start rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted outline-none transition-[transform,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-accent hover:text-accent active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <SortAscending weight="bold" className="size-4" />
+            Sort A–Z
+          </button>
+        )}
+      </div>
 
       <AccordionGroup>
         <SortableList ids={ids} onReorder={reorder}>

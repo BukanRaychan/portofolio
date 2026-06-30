@@ -8,9 +8,8 @@ import {
   type PanInfo,
   type Variants,
 } from "motion/react";
-import { CaretDownIcon, ArrowDown, ArrowUp } from "@phosphor-icons/react";
+import { CaretDown, ArrowDown, ArrowUp } from "@phosphor-icons/react";
 import type { Portfolio } from "@/lib/data";
-import type { Socials } from "@/lib/database.types";
 import { Hero } from "./Hero";
 import { About } from "./About";
 import { Works } from "./Works";
@@ -23,24 +22,28 @@ const SLIDES = [
   { id: "contact", label: "Contact" },
 ];
 
-// ponytail: accumulated wheel delta (px) needed at a slide edge before paginating.
-// Bump if it still feels jumpy; lower if it feels sticky.
-const THRESHOLD = 960;
+// Pagination is driven by scroll *ticks* (wheel notches), not raw delta — every
+// mouse reports a different deltaY per notch, so counting ticks is consistent.
+// TICKS = notches past a slide edge before it flips. MIN_TICK_GAP debounces
+// trackpad inertia (many tiny events) so it can't inflate the count.
+const TICKS = 4;
+const MIN_TICK_GAP = 40;
 
 export function Deck({ data }: { data: Portfolio }) {
   const reduce = useReducedMotion();
   const [[index, dir], setState] = useState<[number, number]>([0, 0]);
   const [menuOpen, setMenuOpen] = useState(false);
   const lock = useRef(false);
-  const acc = useRef(0);
-  const accDir = useRef(0);
+  const ticks = useRef(0);
+  const tickDir = useRef(0);
+  const lastTick = useRef(0);
   const settle = useRef<number>(0);
   // Edge-scroll progress (0–1) and direction, shown as an intent meter.
   const [intent, setIntent] = useState<{ progress: number; dir: number } | null>(null);
 
   const resetIntent = () => {
-    acc.current = 0;
-    accDir.current = 0;
+    ticks.current = 0;
+    tickDir.current = 0;
     clearTimeout(settle.current);
     setIntent(null);
   };
@@ -67,9 +70,9 @@ export function Deck({ data }: { data: Portfolio }) {
     return () => window.removeEventListener("keydown", onKey);
   });
 
-  // Wheel: scroll within a slide until its edge, then keep scrolling to fill an
-  // intent meter — paginates only once accumulated delta passes THRESHOLD, so a
-  // single nudge can't skip a section before it's read. A pause resets it.
+  // Wheel: scroll within a slide until its edge, then keep ticking to fill an
+  // intent meter — paginates only after TICKS notches, so a single nudge can't
+  // skip a section before it's read. A pause or direction change resets it.
   const onWheel = (e: React.WheelEvent) => {
     if (menuOpen || lock.current || Math.abs(e.deltaY) < 4) return;
     const goingDown = e.deltaY > 0;
@@ -96,14 +99,21 @@ export function Deck({ data }: { data: Portfolio }) {
       return;
     }
 
-    if (accDir.current !== dir) acc.current = 0;
-    accDir.current = dir;
-    acc.current += Math.abs(e.deltaY);
+    if (tickDir.current !== dir) ticks.current = 0;
+    tickDir.current = dir;
+
+    // Count one tick per notch; events closer than MIN_TICK_GAP (trackpad
+    // inertia) don't add a tick, keeping mice and trackpads consistent.
+    const now = Date.now();
+    if (now - lastTick.current >= MIN_TICK_GAP) {
+      ticks.current += 1;
+      lastTick.current = now;
+    }
 
     clearTimeout(settle.current);
-    settle.current = window.setTimeout(resetIntent, 320);
+    settle.current = window.setTimeout(resetIntent, 400);
 
-    if (acc.current >= THRESHOLD) {
+    if (ticks.current >= TICKS) {
       lock.current = true;
       resetIntent();
       paginate(target);
@@ -113,7 +123,7 @@ export function Deck({ data }: { data: Portfolio }) {
       return;
     }
 
-    setIntent({ progress: Math.min(1, acc.current / THRESHOLD), dir });
+    setIntent({ progress: ticks.current / TICKS, dir });
   };
 
   const onDragEnd = (_e: unknown, info: PanInfo) => {
@@ -131,7 +141,6 @@ export function Deck({ data }: { data: Portfolio }) {
   };
 
   const settings = data.settings!;
-  const socials = (settings.socials ?? {}) as Socials;
 
   const slideContent = [
     <Hero
@@ -148,11 +157,12 @@ export function Deck({ data }: { data: Portfolio }) {
       bio={settings.bio}
       tech={data.tech}
       education={data.education}
+      aboutEntries={data.aboutEntries}
       interests={settings.interests}
       works={data.works}
     />,
     <Works key="works" works={data.works} tech={data.tech} />,
-    <Contact key="contact" email={settings.email} socials={socials} />,
+    <Contact key="contact" email={settings.email} socials={data.socials} />,
   ];
 
   const menuContainer: Variants = {
@@ -171,21 +181,23 @@ export function Deck({ data }: { data: Portfolio }) {
       onWheel={onWheel}
       className="relative h-dvh w-screen overflow-hidden"
     >
-      {/* Menu toggle — top-left, accent on mobile / background on desktop */}
+      {/* Menu toggle — solid chip so scrolling content passes behind it legibly */}
       <button
         onClick={() => setMenuOpen((o) => !o)}
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
-        className={`absolute left-5 top-5 z-50 grid size-10 place-items-center 
-        transition-transform duration-150 ease-out active:scale-[0.94]
-        sm:left-8 sm:top-6 ${menuOpen ? "" : ""}`}
+        className={`absolute left-5 top-5 z-50 grid size-10 place-items-center rounded-full border 
+          shadow-sm backdrop-blur-md transition-[transform,background-color] 
+          duration-150 ease-out active:scale-[0.94] sm:left-8 sm:top-6 ${
+          menuOpen ? "border-border" : "border-border"
+        }`}
       >
-        <CaretDownIcon
+        <CaretDown
           weight="bold"
           className={`size-5 transition-transform duration-200 ease-out ${
             menuOpen
               ? "rotate-180 text-background"
-              : "text-accent"
+              : "text-accent "
           }`}
         />
       </button>
@@ -228,7 +240,7 @@ export function Deck({ data }: { data: Portfolio }) {
               )}
               {SLIDES[index + intent.dir]?.label}
             </span>
-            <span className="relative h-1 w-54 overflow-hidden rounded-full bg-border">
+            <span className="relative h-1 w-24 overflow-hidden rounded-full bg-border">
               <span
                 className="absolute inset-y-0 left-0 rounded-full bg-accent"
                 style={{ width: `${intent.progress * 100}%` }}

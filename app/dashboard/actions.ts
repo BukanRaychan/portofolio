@@ -123,12 +123,6 @@ export async function saveSettings(
         avatar_url,
         email: str(formData.get("email")) ?? "",
         interests: toArray(formData.get("interests")),
-        socials: {
-          github: str(formData.get("github")),
-          linkedin: str(formData.get("linkedin")),
-          instagram: str(formData.get("instagram")),
-          tiktok: str(formData.get("tiktok")),
-        },
       })
       .eq("id", 1);
 
@@ -158,7 +152,8 @@ export async function saveWork(
       position: str(formData.get("position")),
       place: str(formData.get("place")),
       place_logo_url,
-      period: str(formData.get("period")),
+      start_date: str(formData.get("start_date")),
+      end_date: str(formData.get("end_date")),
       description: str(formData.get("description")),
       link: str(formData.get("link")),
       technologies: toArray(formData.get("technologies")),
@@ -358,8 +353,9 @@ export async function saveEducation(
       period: str(formData.get("period")),
       gpa: str(formData.get("gpa")),
       description: str(formData.get("description")),
+      ongoing: formData.get("ongoing") === "on",
+      is_external: formData.get("is_external") === "on",
       logo_url,
-      sort_order: Number(formData.get("sort_order") ?? 0),
     };
 
     if (id) {
@@ -376,10 +372,24 @@ export async function saveEducation(
       return "Education saved";
     }
 
-    await supabase.from("education").insert(row);
+    const { count } = await supabase
+      .from("education")
+      .select("*", { count: "exact", head: true });
+    await supabase.from("education").insert({ ...row, sort_order: count ?? 0 });
     done("/dashboard/education");
     return "Education added";
   });
+}
+
+// Persist a new education order from drag-to-reorder.
+export async function reorderEducation(ids: string[]) {
+  const supabase = await requireAdmin();
+  await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("education").update({ sort_order: i }).eq("id", id),
+    ),
+  );
+  revalidatePath("/");
 }
 
 export async function deleteEducation(
@@ -398,6 +408,149 @@ export async function deleteEducation(
     done("/dashboard/education");
     return "Education deleted";
   });
+}
+
+// ---- About entries (certification / achievement / organization) ----
+export async function saveAboutEntry(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = str(formData.get("id"));
+    const kind = str(formData.get("kind")) ?? "certification";
+    const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
+    const logo_url = uploaded ?? str(formData.get("logo_url"));
+    const row = {
+      kind,
+      title: str(formData.get("title")) ?? "",
+      subtitle: str(formData.get("subtitle")),
+      period: str(formData.get("period")),
+      description: str(formData.get("description")),
+      link: str(formData.get("link")),
+      logo_url,
+    };
+
+    if (id) {
+      const { data: prev } = await supabase
+        .from("about_entries")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      await supabase.from("about_entries").update(row).eq("id", id);
+      if (prev?.logo_url && prev.logo_url !== logo_url) {
+        await removeStorage(supabase, prev.logo_url);
+      }
+      done("/dashboard/credentials");
+      return "Entry saved";
+    }
+
+    const { count } = await supabase
+      .from("about_entries")
+      .select("*", { count: "exact", head: true })
+      .eq("kind", kind);
+    await supabase
+      .from("about_entries")
+      .insert({ ...row, sort_order: count ?? 0 });
+    done("/dashboard/credentials");
+    return "Entry added";
+  });
+}
+
+export async function deleteAboutEntry(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = String(formData.get("id"));
+    const { data } = await supabase
+      .from("about_entries")
+      .select("logo_url")
+      .eq("id", id)
+      .single();
+    await supabase.from("about_entries").delete().eq("id", id);
+    await removeStorage(supabase, data?.logo_url ?? null);
+    done("/dashboard/credentials");
+    return "Entry deleted";
+  });
+}
+
+export async function reorderAboutEntries(ids: string[]) {
+  const supabase = await requireAdmin();
+  await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("about_entries").update({ sort_order: i }).eq("id", id),
+    ),
+  );
+  revalidatePath("/");
+}
+
+// ---- Social links ----
+export async function saveSocial(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = str(formData.get("id"));
+    const uploaded = await uploadIfPresent(supabase, formData.get("logo_file"));
+    const logo_url = uploaded ?? str(formData.get("logo_url"));
+    const row = {
+      label: str(formData.get("label")) ?? "",
+      link: str(formData.get("link")) ?? "",
+      logo_url,
+    };
+    if (!row.label || !row.link) throw new Error("Label and link are required");
+
+    if (id) {
+      const { data: prev } = await supabase
+        .from("social_links")
+        .select("logo_url")
+        .eq("id", id)
+        .single();
+      await supabase.from("social_links").update(row).eq("id", id);
+      if (prev?.logo_url && prev.logo_url !== logo_url) {
+        await removeStorage(supabase, prev.logo_url);
+      }
+      done("/dashboard/social");
+      return "Link saved";
+    }
+
+    const { count } = await supabase
+      .from("social_links")
+      .select("*", { count: "exact", head: true });
+    await supabase
+      .from("social_links")
+      .insert({ ...row, sort_order: count ?? 0 });
+    done("/dashboard/social");
+    return "Link added";
+  });
+}
+
+export async function deleteSocial(
+  _prev: ActionResult,
+  formData: FormData,
+): Promise<ActionResult> {
+  return run(async (supabase) => {
+    const id = String(formData.get("id"));
+    const { data } = await supabase
+      .from("social_links")
+      .select("logo_url")
+      .eq("id", id)
+      .single();
+    await supabase.from("social_links").delete().eq("id", id);
+    await removeStorage(supabase, data?.logo_url ?? null);
+    done("/dashboard/social");
+    return "Link deleted";
+  });
+}
+
+export async function reorderSocial(ids: string[]) {
+  const supabase = await requireAdmin();
+  await Promise.all(
+    ids.map((id, i) =>
+      supabase.from("social_links").update({ sort_order: i }).eq("id", id),
+    ),
+  );
+  revalidatePath("/");
 }
 
 // ---- Auth ----

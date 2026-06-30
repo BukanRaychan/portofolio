@@ -63,14 +63,15 @@ export function Hero({
             <span className="marker">{role.replace(/\.$/, "")}</span>
           </motion.h1>
 
-          <motion.div className="flex flex-col items-start gap-2  text-[clamp(0.75rem,1vw+0.5rem,1rem)]">
+          <motion.div className="flex flex-col items-start  text-[clamp(0.75rem,1vw+0.5rem,1rem)]">
             {subtitle.split("|").map((str) => (
               <motion.p
                 key={str}
                 variants={item}
-                className="font-mono max-w-md  text-muted "
+                className="font-mono max-w-md text-muted relative flex items-center gap-2"
               >
-                {str}
+                <motion.div className="h-0.5 w-12 bg-accent absolute bottom-1"/>
+                <motion.div>{str}</motion.div>
               </motion.p>
             ))}
           </motion.div>

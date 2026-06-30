@@ -11,6 +11,16 @@ import {
 } from "motion/react";
 import { ArrowUpRight, CaretDown } from "@phosphor-icons/react";
 import type { TechStack, Work } from "@/lib/database.types";
+import { formatPeriod, isOngoing } from "@/lib/format";
+
+function Ongoing() {
+  return (
+    <span className="inline-flex shrink-0 items-center gap-1 rounded-full border border-accent/40 bg-accent/10 px-2 py-0.5 text-[10px] font-medium text-accent">
+      <span className="size-1.5 rounded-full bg-accent" />
+      Ongoing
+    </span>
+  );
+}
 
 export function Works({ works, tech }: { works: Work[]; tech: TechStack[] }) {
   const reduce = useReducedMotion();
@@ -83,15 +93,18 @@ export function Works({ works, tech }: { works: Work[]; tech: TechStack[] }) {
                     {String(i + 1).padStart(2, "0")}
                   </span>
                   <span className="min-w-0 flex-1">
-                    <span className="block text-lg font-semibold tracking-tight transition-colors group-hover:text-accent sm:text-2xl">
-                      {work.title}
+                    <span className="flex items-center gap-2">
+                      <span className="text-lg font-semibold tracking-tight transition-colors group-hover:text-accent sm:text-2xl">
+                        {work.title}
+                      </span>
+                      {isOngoing(work.start_date, work.end_date) && <Ongoing />}
                     </span>
                     <span className="block truncate text-sm text-muted">
                       {work.place}
                     </span>
                   </span>
                   <span className="hidden font-mono text-xs text-muted sm:block">
-                    {work.period}
+                    {formatPeriod(work.start_date, work.end_date)}
                   </span>
                   <CaretDown
                     className={`size-4 flex-shrink-0 text-muted transition-transform duration-300 ease-out ${

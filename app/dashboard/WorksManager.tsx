@@ -2,7 +2,7 @@
 
 /* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
-import { DotsSixVertical } from "@phosphor-icons/react";
+import { DotsSixVertical, SortAscending } from "@phosphor-icons/react";
 import type { Work } from "@/lib/database.types";
 import {
   saveWork,
@@ -46,11 +46,22 @@ function WorkForm({ work }: { work?: Work }) {
         <Field label="Place">
           <Input name="place" defaultValue={work?.place ?? ""} />
         </Field>
-        <Field label="Period">
-          <Input name="period" defaultValue={work?.period ?? ""} />
-        </Field>
         <Field label="Link (optional)">
           <Input name="link" defaultValue={work?.link ?? ""} />
+        </Field>
+        <Field label="Start date">
+          <Input
+            name="start_date"
+            defaultValue={work?.start_date ?? ""}
+            placeholder="e.g. Jan 2024"
+          />
+        </Field>
+        <Field label="End date (blank = Ongoing)">
+          <Input
+            name="end_date"
+            defaultValue={work?.end_date ?? ""}
+            placeholder="e.g. Mar 2025"
+          />
         </Field>
       </div>
       <Field label="Technologies (slugs, comma separated)">
@@ -151,6 +162,14 @@ function WorkImages({ work }: { work: Work }) {
   );
 }
 
+// Sort key for "sort by end date": ongoing (no end) floats to the top, then
+// most-recent end year first.
+function endKey(w: Work): number {
+  if (!w.end_date?.trim()) return Number.POSITIVE_INFINITY;
+  const y = w.end_date.match(/\d{4}/);
+  return y ? Number(y[0]) : 0;
+}
+
 function Column({
   heading,
   category,
@@ -177,9 +196,27 @@ function Column({
     reorderWorks(newIds);
   }
 
+  function sortByEndDate() {
+    const sorted = [...order].sort((a, b) => endKey(b) - endKey(a));
+    setOrder(sorted);
+    reorderWorks(sorted.map((w) => w.id));
+  }
+
   return (
     <div className="flex flex-col gap-4">
-      <h2 className="text-lg font-semibold tracking-tight">{heading}</h2>
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="text-lg font-semibold tracking-tight">{heading}</h2>
+        {order.length > 1 && (
+          <button
+            type="button"
+            onClick={sortByEndDate}
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted outline-none transition-[transform,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-accent hover:text-accent active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent"
+          >
+            <SortAscending weight="bold" className="size-4" />
+            End date
+          </button>
+        )}
+      </div>
       <SortableList ids={ids} onReorder={reorder}>
         <div className="flex flex-col gap-4">
           {order.map((work) => (

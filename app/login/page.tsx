@@ -50,7 +50,7 @@ export default function LoginPage() {
         transition={{ duration: 0.5, ease: [0.23, 1, 0.32, 1] }}
         className="absolute left-6 top-6 z-10 font-mono text-sm font-semibold tracking-tight sm:left-12 sm:top-8"
       >
-        FRM<span className="text-accent">.</span>
+        {/* FRM<span className="text-accent">.</span> */}
       </motion.span>
 
       {/* Foreground content, anchored bottom-left */}

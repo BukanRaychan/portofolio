@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import type { Socials } from "@/lib/database.types";
 import { saveSettings } from "./actions";
 import { Field, Input, Textarea, SaveButton, Card } from "./ui";
 import { FileInput } from "./FileInput";
@@ -14,7 +13,6 @@ export default async function SettingsPage() {
     .single();
 
   if (!data) return <p className="text-muted">No settings row found.</p>;
-  const socials = (data.socials ?? {}) as Socials;
 
   return (
     <Card>
@@ -50,20 +48,11 @@ export default async function SettingsPage() {
         <Field label="Interests (comma or newline separated)">
           <Textarea name="interests" defaultValue={data.interests.join(", ")} />
         </Field>
-        <div className="grid gap-5 sm:grid-cols-2">
-          <Field label="GitHub URL">
-            <Input name="github" defaultValue={socials.github ?? ""} />
-          </Field>
-          <Field label="LinkedIn URL">
-            <Input name="linkedin" defaultValue={socials.linkedin ?? ""} />
-          </Field>
-          <Field label="Instagram URL">
-            <Input name="instagram" defaultValue={socials.instagram ?? ""} />
-          </Field>
-          <Field label="TikTok URL">
-            <Input name="tiktok" defaultValue={socials.tiktok ?? ""} />
-          </Field>
-        </div>
+        <p className="text-xs text-muted">
+          Contact links moved to the{" "}
+          <span className="font-medium text-foreground">Social</span> tab — add
+          and reorder them there.
+        </p>
         <SaveButton>Save settings</SaveButton>
       </ActionForm>
     </Card>

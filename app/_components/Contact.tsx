@@ -1,33 +1,18 @@
 "use client";
 
+/* eslint-disable @next/next/no-img-element */
 import { motion, useReducedMotion, type Variants } from "motion/react";
-import {
-  ArrowUpRight,
-  GithubLogo,
-  LinkedinLogo,
-  InstagramLogo,
-  TiktokLogo,
-} from "@phosphor-icons/react";
-import type { Socials } from "@/lib/database.types";
-
-const ICONS = {
-  github: GithubLogo,
-  linkedin: LinkedinLogo,
-  instagram: InstagramLogo,
-  tiktok: TiktokLogo,
-} as const;
+import { ArrowUpRight, LinkSimple } from "@phosphor-icons/react";
+import type { SocialLink } from "@/lib/database.types";
 
 export function Contact({
   email,
   socials,
 }: {
   email: string;
-  socials: Socials;
+  socials: SocialLink[];
 }) {
   const reduce = useReducedMotion();
-  const links = (Object.keys(ICONS) as (keyof typeof ICONS)[])
-    .filter((k) => socials[k])
-    .map((k) => ({ key: k, href: socials[k]!, Icon: ICONS[k] }));
 
   const container: Variants = {
     hidden: {},
@@ -74,18 +59,31 @@ export function Contact({
           />
         </motion.a>
 
-        {links.length > 0 && (
-          <motion.div variants={item} className="flex items-center gap-2">
-            {links.map(({ key, href, Icon }) => (
+        {socials.length > 0 && (
+          <motion.div
+            variants={item}
+            className="flex flex-wrap items-center justify-center gap-4"
+          >
+            {socials.map((s) => (
               <a
-                key={key}
-                href={href}
+                key={s.id}
+                href={s.link}
                 target="_blank"
                 rel="noreferrer"
-                aria-label={key}
-                className="grid size-12 place-items-center rounded-full border border-border text-muted transition-all duration-200 ease-out hover:border-accent hover:text-foreground active:scale-[0.95]"
+                aria-label={s.label}
+                title={s.label}
+                className="grid size-12 place-items-center rounded-full group border border-border text-muted transition-all duration-200 ease-out hover:border-accent hover:text-foreground active:scale-[0.95]"
               >
-                <Icon weight="fill" className="size-5" />
+                {s.logo_url ? (
+                  <img
+                    src={s.logo_url}
+                    alt=""
+                    aria-hidden
+                    className="size-5 object-contain opacity-40"
+                  />
+                ) : (
+                  <LinkSimple weight="bold" className="size-5" />
+                )}
               </a>
             ))}
           </motion.div>

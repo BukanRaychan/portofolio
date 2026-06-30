@@ -12,6 +12,45 @@ export type Database = {
   }
   public: {
     Tables: {
+      about_entries: {
+        Row: {
+          created_at: string
+          description: string | null
+          id: string
+          kind: string
+          link: string | null
+          logo_url: string | null
+          period: string | null
+          sort_order: number
+          subtitle: string | null
+          title: string
+        }
+        Insert: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind: string
+          link?: string | null
+          logo_url?: string | null
+          period?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title: string
+        }
+        Update: {
+          created_at?: string
+          description?: string | null
+          id?: string
+          kind?: string
+          link?: string | null
+          logo_url?: string | null
+          period?: string | null
+          sort_order?: number
+          subtitle?: string | null
+          title?: string
+        }
+        Relationships: []
+      }
       education: {
         Row: {
           degree: string
@@ -19,7 +58,9 @@ export type Database = {
           gpa: string | null
           id: string
           institution: string
+          is_external: boolean
           logo_url: string | null
+          ongoing: boolean
           period: string | null
           sort_order: number
         }
@@ -29,7 +70,9 @@ export type Database = {
           gpa?: string | null
           id?: string
           institution: string
+          is_external?: boolean
           logo_url?: string | null
+          ongoing?: boolean
           period?: string | null
           sort_order?: number
         }
@@ -39,7 +82,9 @@ export type Database = {
           gpa?: string | null
           id?: string
           institution?: string
+          is_external?: boolean
           logo_url?: string | null
+          ongoing?: boolean
           period?: string | null
           sort_order?: number
         }
@@ -87,6 +132,30 @@ export type Database = {
         }
         Relationships: []
       }
+      social_links: {
+        Row: {
+          id: string
+          label: string
+          link: string
+          logo_url: string | null
+          sort_order: number
+        }
+        Insert: {
+          id?: string
+          label: string
+          link: string
+          logo_url?: string | null
+          sort_order?: number
+        }
+        Update: {
+          id?: string
+          label?: string
+          link?: string
+          logo_url?: string | null
+          sort_order?: number
+        }
+        Relationships: []
+      }
       tech_stack: {
         Row: {
           id: string
@@ -119,14 +188,15 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
+          end_date: string | null
           id: string
           images: string[]
           link: string | null
-          period: string | null
           place: string | null
           place_logo_url: string | null
           position: string | null
           sort_order: number
+          start_date: string | null
           technologies: string[]
           title: string
         }
@@ -134,14 +204,15 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
+          end_date?: string | null
           id?: string
           images?: string[]
           link?: string | null
-          period?: string | null
           place?: string | null
           place_logo_url?: string | null
           position?: string | null
           sort_order?: number
+          start_date?: string | null
           technologies?: string[]
           title: string
         }
@@ -149,14 +220,15 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
+          end_date?: string | null
           id?: string
           images?: string[]
           link?: string | null
-          period?: string | null
           place?: string | null
           place_logo_url?: string | null
           position?: string | null
           sort_order?: number
+          start_date?: string | null
           technologies?: string[]
           title?: string
         }
@@ -178,11 +250,8 @@ export type SiteSettings = Tables<"site_settings">
 export type Education = Tables<"education">
 export type TechStack = Tables<"tech_stack">
 export type Work = Tables<"works">
+export type AboutEntry = Tables<"about_entries">
+export type SocialLink = Tables<"social_links">
 
-export type Socials = {
-  github?: string
-  linkedin?: string
-  instagram?: string
-  tiktok?: string
-  twitter?: string
-}
+// about_entries.kind values
+export type AboutKind = "certification" | "achievement" | "organization"
