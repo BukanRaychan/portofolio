@@ -40,7 +40,6 @@ function Ongoing() {
   );
 }
 
-// Small logo row shown in the accordion head so the stack reads at a glance.
 function TechRow({
   slugs,
   techMap,
@@ -136,7 +135,7 @@ function Carousel({
             alt=""
             aria-hidden
             draggable={false}
-            className="h-44 w-72 object-cover transition-transform duration-500 ease-[var(--ease-out)] group-hover:scale-[1.03] sm:h-52 sm:w-80"
+            className="h-44 w-72 object-cover transition-transform duration-500 ease-out group-hover:scale-[1.03] sm:h-52 sm:w-80"
           />
         </button>
       ))}
@@ -168,7 +167,7 @@ function Lightbox({
       exit={{ opacity: 0 }}
       transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
       onClick={onClose}
-      className="fixed inset-0 z-[60] flex cursor-zoom-out items-center justify-center bg-background/90 p-4 backdrop-blur-sm sm:p-10"
+      className="fixed inset-0 z-60 flex cursor-zoom-out items-center justify-center bg-background/90 p-4 backdrop-blur-sm sm:p-10"
     >
       <motion.img
         src={src}
@@ -568,7 +567,7 @@ export function Works({ works, tech }: { works: Work[]; tech: TechStack[] }) {
       </div>
 
       {/* Cursor-following preview (desktop, motion only) */}
-      {!reduce && preview && pointerMoved && !lightbox && (
+      {/* {!reduce && preview && pointerMoved && !lightbox && (
         <motion.img
           src={preview}
           alt=""
@@ -576,7 +575,7 @@ export function Works({ works, tech }: { works: Work[]; tech: TechStack[] }) {
           style={{ x, y }}
           className="pointer-events-none fixed left-0 top-0 z-40 hidden h-40 w-64 rounded-xl border border-border object-cover shadow-2xl lg:block"
         />
-      )}
+      )} */}
 
       <AnimatePresence>
         {lightbox && (
