@@ -157,6 +157,12 @@ export async function saveWork(
       description: str(formData.get("description")),
       link: str(formData.get("link")),
       technologies: toArray(formData.get("technologies")),
+      // Both are project-only: a project may link to a parent experience and
+      // carry a GitHub repo. Experiences always clear them.
+      github_link:
+        category === "project" ? str(formData.get("github_link")) : null,
+      experience_id:
+        category === "project" ? str(formData.get("experience_id")) : null,
     };
 
     if (id) {

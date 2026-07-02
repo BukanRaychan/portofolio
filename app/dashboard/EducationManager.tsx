@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DotsSixVertical } from "@phosphor-icons/react";
 import type { Education } from "@/lib/database.types";
 import { saveEducation, deleteEducation, reorderEducation } from "./actions";
-import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "./ui";
+import { Field, Input, Textarea, SaveButton, InlineDelete, Card } from "./ui";
 import { FileInput } from "./FileInput";
 import { ActionForm } from "./ActionForm";
 import { AccordionGroup, Accordion } from "./Accordion";
@@ -55,7 +55,10 @@ function EducationForm({ item }: { item?: Education }) {
       <Field label="Description">
         <Textarea name="description" defaultValue={item?.description ?? ""} />
       </Field>
-      <SaveButton>{item ? "Save" : "Add education"}</SaveButton>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveButton>{item ? "Save" : "Add education"}</SaveButton>
+        {item && <InlineDelete action={deleteEducation} id={item.id} />}
+      </div>
     </ActionForm>
   );
 }
@@ -109,13 +112,7 @@ export function EducationManager({ items }: { items: Education[] }) {
                           </span>
                         }
                       >
-                        <div className="flex flex-col gap-4">
-                          <EducationForm item={item} />
-                          <ActionForm action={deleteEducation}>
-                            <input type="hidden" name="id" value={item.id} />
-                            <DeleteButton>Delete education</DeleteButton>
-                          </ActionForm>
-                        </div>
+                        <EducationForm item={item} />
                       </Accordion>
                     </div>
                   </Card>

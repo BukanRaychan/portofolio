@@ -12,13 +12,24 @@ import {
   reorderWorks,
   reorderWorkImages,
 } from "./actions";
-import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "./ui";
+import { Field, Input, Textarea, SaveButton, InlineDelete, Card } from "./ui";
 import { FileInput } from "./FileInput";
 import { ActionForm } from "./ActionForm";
 import { AccordionGroup, Accordion } from "./Accordion";
 import { SortableList, SortableItem } from "./Sortable";
 
-function WorkForm({ work }: { work?: Work }) {
+function WorkForm({
+  work,
+  experiences,
+}: {
+  work?: Work;
+  experiences: Work[];
+}) {
+  const [category, setCategory] = useState(work?.category ?? "project");
+  const isProject = category === "project";
+  // Can't parent a project to itself.
+  const parents = experiences.filter((e) => e.id !== work?.id);
+
   return (
     <ActionForm
       action={saveWork}
@@ -30,7 +41,8 @@ function WorkForm({ work }: { work?: Work }) {
         <Field label="Category">
           <select
             name="category"
-            defaultValue={work?.category ?? "project"}
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
             className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
           >
             <option value="experience">Experience</option>
@@ -45,9 +57,6 @@ function WorkForm({ work }: { work?: Work }) {
         </Field>
         <Field label="Place">
           <Input name="place" defaultValue={work?.place ?? ""} />
-        </Field>
-        <Field label="Link (optional)">
-          <Input name="link" defaultValue={work?.link ?? ""} />
         </Field>
         <Field label="Start date">
           <Input
@@ -64,6 +73,39 @@ function WorkForm({ work }: { work?: Work }) {
           />
         </Field>
       </div>
+      {isProject && (
+        <div className="grid gap-4 sm:grid-cols-2">
+          <Field label="Live link / View Product (optional)">
+            <Input name="link" defaultValue={work?.link ?? ""} />
+          </Field>
+          <Field label="GitHub link (optional)">
+            <Input
+              name="github_link"
+              defaultValue={work?.github_link ?? ""}
+              placeholder="https://github.com/…"
+            />
+          </Field>
+          <Field label="Part of experience (optional)">
+            <select
+              name="experience_id"
+              defaultValue={work?.experience_id ?? ""}
+              className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent"
+            >
+              <option value="">— None —</option>
+              {parents.map((e) => (
+                <option key={e.id} value={e.id}>
+                  {e.title}
+                </option>
+              ))}
+            </select>
+          </Field>
+        </div>
+      )}
+      {!isProject && (
+        <Field label="Link (optional)">
+          <Input name="link" defaultValue={work?.link ?? ""} />
+        </Field>
+      )}
       <Field label="Technologies (slugs, comma separated)">
         <Input
           name="technologies"
@@ -81,7 +123,10 @@ function WorkForm({ work }: { work?: Work }) {
           <FileInput name="logo_file" />
         </Field>
       </div>
-      <SaveButton>{work ? "Save" : "Add work"}</SaveButton>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveButton>{work ? "Save" : "Add work"}</SaveButton>
+        {work && <InlineDelete action={deleteWork} id={work.id} />}
+      </div>
     </ActionForm>
   );
 }
@@ -174,10 +219,14 @@ function Column({
   heading,
   category,
   works,
+  experiences,
+  query,
 }: {
   heading: string;
   category: string;
   works: Work[];
+  experiences: Work[];
+  query: string;
 }) {
   const [order, setOrder] = useState(() =>
     works.filter((w) => w.category === category),
@@ -202,6 +251,14 @@ function Column({
     reorderWorks(sorted.map((w) => w.id));
   }
 
+  const q = query.trim().toLowerCase();
+  const matches = (w: Work) =>
+    !q ||
+    `${w.title} ${w.place ?? ""} ${w.position ?? ""}`
+      .toLowerCase()
+      .includes(q);
+  const visibleCount = order.filter(matches).length;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-center justify-between gap-2">
@@ -222,6 +279,7 @@ function Column({
           {order.map((work) => (
             <SortableItem key={work.id} id={work.id}>
               {({ handleProps, isDragging }) => (
+                <div className={matches(work) ? "" : "hidden"}>
                 <Card>
                   <div className={isDragging ? "opacity-60" : ""}>
                     <Accordion
@@ -230,7 +288,7 @@ function Column({
                       handle={
                         <span
                           {...handleProps}
-                          aria-label="Drag to reorder"
+                          
                           className="cursor-grab touch-none rounded-md p-1 text-muted transition-colors hover:text-foreground active:cursor-grabbing"
                         >
                           <DotsSixVertical weight="bold" className="size-5" />
@@ -238,26 +296,30 @@ function Column({
                       }
                     >
                       <div className="flex flex-col gap-4">
-                        <WorkForm work={work} />
+                        <WorkForm work={work} experiences={experiences} />
                         <WorkImages work={work} />
-                        <ActionForm action={deleteWork}>
-                          <input type="hidden" name="id" value={work.id} />
-                          <DeleteButton>Delete work</DeleteButton>
-                        </ActionForm>
                       </div>
                     </Accordion>
                   </div>
                 </Card>
+                </div>
               )}
             </SortableItem>
           ))}
         </div>
       </SortableList>
+      {q && visibleCount === 0 && (
+        <p className="py-6 text-center text-sm text-muted">
+          No {heading.toLowerCase()} matches “{query}”.
+        </p>
+      )}
     </div>
   );
 }
 
 export function WorksManager({ works }: { works: Work[] }) {
+  const experiences = works.filter((w) => w.category === "experience");
+  const [query, setQuery] = useState("");
   return (
     <div className="flex flex-col gap-8">
       <details>
@@ -266,15 +328,34 @@ export function WorksManager({ works }: { works: Work[] }) {
         </summary>
         <div className="mt-4">
           <Card>
-            <WorkForm />
+            <WorkForm experiences={experiences} />
           </Card>
         </div>
       </details>
 
+      <Input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search experience & projects…"
+      />
+
       <AccordionGroup>
         <div className="grid gap-8 lg:grid-cols-2">
-          <Column heading="Experience" category="experience" works={works} />
-          <Column heading="Projects" category="project" works={works} />
+          <Column
+            heading="Experience"
+            category="experience"
+            works={works}
+            experiences={experiences}
+            query={query}
+          />
+          <Column
+            heading="Projects"
+            category="project"
+            works={works}
+            experiences={experiences}
+            query={query}
+          />
         </div>
       </AccordionGroup>
     </div>

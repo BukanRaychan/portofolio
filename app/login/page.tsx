@@ -29,18 +29,22 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="relative flex min-h-[100dvh] flex-col justify-end overflow-hidden bg-background px-6 pb-16 pt-24 sm:px-12 sm:pb-24">
+    <main className="relative flex min-h-dvh flex-col justify-end overflow-hidden bg-background px-6 pb-16 pt-24 sm:px-12 sm:pb-24">
       {/* Oversized word bleeding off the top-right edge */}
       <motion.span
         aria-hidden
         initial={reduce ? { opacity: 0 } : { opacity: 0, x: 40 }}
         animate={{ opacity: 1, x: 0 }}
         transition={{ duration: 0.9, ease: [0.23, 1, 0.32, 1] }}
-        className="pointer-events-none absolute -right-3 top-1 select-none text-right font-semibold leading-[0.8] tracking-tighter text-accent/10 text-[clamp(6.5rem,25vw,21rem)] sm:-right-6"
+        className="pointer-events-none absolute -right-3 top-1 select-none text-right font-semibold leading-[0.8] tracking-tighter text-accent/10 text-[clamp(6.5rem,14vw,21rem)] sm:-right-6"
       >
-        DASH
+        DA
         <br />
-        BOARD
+        SH
+        <br />
+        BOA
+        <br />
+        RD
       </motion.span>
 
       {/* Brand */}

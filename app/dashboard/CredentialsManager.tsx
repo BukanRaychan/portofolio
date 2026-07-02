@@ -8,7 +8,7 @@ import {
   deleteAboutEntry,
   reorderAboutEntries,
 } from "./actions";
-import { Field, Input, Textarea, SaveButton, DeleteButton, Card } from "./ui";
+import { Field, Input, Textarea, SaveButton, InlineDelete, Card } from "./ui";
 import { FileInput } from "./FileInput";
 import { ActionForm } from "./ActionForm";
 import { AccordionGroup, Accordion } from "./Accordion";
@@ -46,7 +46,10 @@ function EntryForm({ kind, entry }: { kind: AboutKind; entry?: AboutEntry }) {
       <Field label="Description">
         <Textarea name="description" defaultValue={entry?.description ?? ""} />
       </Field>
-      <SaveButton>{entry ? "Save" : "Add"}</SaveButton>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveButton>{entry ? "Save" : "Add"}</SaveButton>
+        {entry && <InlineDelete action={deleteAboutEntry} id={entry.id} />}
+      </div>
     </ActionForm>
   );
 }
@@ -111,13 +114,7 @@ function Column({
                         </span>
                       }
                     >
-                      <div className="flex flex-col gap-4">
-                        <EntryForm kind={kind} entry={entry} />
-                        <ActionForm action={deleteAboutEntry}>
-                          <input type="hidden" name="id" value={entry.id} />
-                          <DeleteButton>Delete</DeleteButton>
-                        </ActionForm>
-                      </div>
+                      <EntryForm kind={kind} entry={entry} />
                     </Accordion>
                   </div>
                 </Card>

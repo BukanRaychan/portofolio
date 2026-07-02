@@ -5,7 +5,7 @@ import { useState } from "react";
 import { DotsSixVertical, LinkSimple } from "@phosphor-icons/react";
 import type { SocialLink } from "@/lib/database.types";
 import { saveSocial, deleteSocial, reorderSocial } from "./actions";
-import { Field, Input, SaveButton, DeleteButton, Card } from "./ui";
+import { Field, Input, SaveButton, InlineDelete, Card } from "./ui";
 import { FileInput } from "./FileInput";
 import { ActionForm } from "./ActionForm";
 import { AccordionGroup, Accordion } from "./Accordion";
@@ -43,7 +43,10 @@ function SocialForm({ link }: { link?: SocialLink }) {
           <FileInput name="logo_file" />
         </Field>
       </div>
-      <SaveButton>{link ? "Save" : "Add link"}</SaveButton>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveButton>{link ? "Save" : "Add link"}</SaveButton>
+        {link && <InlineDelete action={deleteSocial} id={link.id} />}
+      </div>
     </ActionForm>
   );
 }
@@ -113,13 +116,7 @@ export function SocialManager({ links }: { links: SocialLink[] }) {
                           </span>
                         }
                       >
-                        <div className="flex flex-col gap-4">
-                          <SocialForm link={link} />
-                          <ActionForm action={deleteSocial}>
-                            <input type="hidden" name="id" value={link.id} />
-                            <DeleteButton>Delete link</DeleteButton>
-                          </ActionForm>
-                        </div>
+                        <SocialForm link={link} />
                       </Accordion>
                     </div>
                   </Card>

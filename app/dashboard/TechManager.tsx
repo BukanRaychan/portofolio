@@ -4,7 +4,7 @@ import { useState } from "react";
 import { DotsSixVertical, SortAscending } from "@phosphor-icons/react";
 import type { TechStack } from "@/lib/database.types";
 import { saveTech, deleteTech, reorderTech } from "./actions";
-import { Field, Input, SaveButton, DeleteButton, Card } from "./ui";
+import { Field, Input, SaveButton, InlineDelete, Card } from "./ui";
 import { FileInput } from "./FileInput";
 import { ActionForm } from "./ActionForm";
 import { AccordionGroup, Accordion } from "./Accordion";
@@ -40,7 +40,10 @@ function TechForm({ tech }: { tech?: TechStack }) {
         />
         Invert in dark mode
       </label>
-      <SaveButton>{tech ? "Save" : "Add tech"}</SaveButton>
+      <div className="flex flex-wrap items-center gap-3">
+        <SaveButton>{tech ? "Save" : "Add tech"}</SaveButton>
+        {tech && <InlineDelete action={deleteTech} id={tech.id} />}
+      </div>
     </ActionForm>
   );
 }
@@ -70,6 +73,12 @@ export function TechManager({ techs }: { techs: TechStack[] }) {
     reorderTech(sorted.map((t) => t.id));
   }
 
+  const [query, setQuery] = useState("");
+  const q = query.trim().toLowerCase();
+  const matches = (t: TechStack) =>
+    !q || `${t.name} ${t.slug}`.toLowerCase().includes(q);
+  const visibleCount = order.filter(matches).length;
+
   return (
     <div className="flex flex-col gap-6">
       <div className="flex items-center justify-between gap-3">
@@ -96,12 +105,20 @@ export function TechManager({ techs }: { techs: TechStack[] }) {
         )}
       </div>
 
+      <Input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder="Search tech stack…"
+      />
+
       <AccordionGroup>
         <SortableList ids={ids} onReorder={reorder}>
           <div className="flex flex-col gap-3">
             {order.map((tech) => (
               <SortableItem key={tech.id} id={tech.id}>
                 {({ handleProps, isDragging }) => (
+                  <div className={matches(tech) ? "" : "hidden"}>
                   <Card>
                     <div className={isDragging ? "opacity-60" : ""}>
                       <Accordion
@@ -130,21 +147,21 @@ export function TechManager({ techs }: { techs: TechStack[] }) {
                           </span>
                         }
                       >
-                        <div className="flex flex-col gap-4">
-                          <TechForm tech={tech} />
-                          <ActionForm action={deleteTech}>
-                            <input type="hidden" name="id" value={tech.id} />
-                            <DeleteButton>Delete tech</DeleteButton>
-                          </ActionForm>
-                        </div>
+                        <TechForm tech={tech} />
                       </Accordion>
                     </div>
                   </Card>
+                  </div>
                 )}
               </SortableItem>
             ))}
           </div>
         </SortableList>
+        {q && visibleCount === 0 && (
+          <p className="py-6 text-center text-sm text-muted">
+            No tech matches “{query}”.
+          </p>
+        )}
       </AccordionGroup>
     </div>
   );

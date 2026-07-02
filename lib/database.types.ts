@@ -189,6 +189,8 @@ export type Database = {
           created_at: string
           description: string | null
           end_date: string | null
+          experience_id: string | null
+          github_link: string | null
           id: string
           images: string[]
           link: string | null
@@ -205,6 +207,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          experience_id?: string | null
+          github_link?: string | null
           id?: string
           images?: string[]
           link?: string | null
@@ -221,6 +225,8 @@ export type Database = {
           created_at?: string
           description?: string | null
           end_date?: string | null
+          experience_id?: string | null
+          github_link?: string | null
           id?: string
           images?: string[]
           link?: string | null
@@ -232,7 +238,15 @@ export type Database = {
           technologies?: string[]
           title?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "works_experience_id_fkey"
+            columns: ["experience_id"]
+            isOneToOne: false
+            referencedRelation: "works"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: { [_ in never]: never }

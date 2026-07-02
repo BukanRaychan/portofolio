@@ -6,7 +6,9 @@ import { Paperclip, CheckCircle } from "@phosphor-icons/react";
 // File input with a clear "file selected" indicator.
 export function FileInput({
   name,
-  accept = "image/*",
+  // Explicit extensions alongside image/* — on Windows the picker can hide
+  // .jpeg/.jfif under a bare "image/*" depending on MIME registry associations.
+  accept = "image/*,.jpg,.jpeg,.jfif,.png,.webp,.gif,.svg",
 }: {
   name: string;
   accept?: string;

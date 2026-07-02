@@ -187,7 +187,7 @@ export function Deck({ data }: { data: Portfolio }) {
         aria-label={menuOpen ? "Close menu" : "Open menu"}
         aria-expanded={menuOpen}
         className={`absolute left-5 top-5 z-50 grid size-10 place-items-center rounded-full border 
-          shadow-sm backdrop-blur-md transition-[transform,background-color] 
+          shadow-sm backdrop-blur-xs  transition-[transform,background-color] 
           duration-150 ease-out active:scale-[0.94] sm:left-8 sm:top-6 ${
           menuOpen ? "border-border" : "border-border"
         }`}

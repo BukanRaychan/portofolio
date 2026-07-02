@@ -70,8 +70,8 @@ export function Hero({
                 variants={item}
                 className="font-mono max-w-md text-muted relative flex items-center gap-2"
               >
-                <motion.div className="h-0.5 w-12 bg-accent absolute bottom-1"/>
-                <motion.div>{str}</motion.div>
+                {/* <motion.div className="h-0.5 w-12 bg-accent absolute bottom-1"/> */}
+                {str}
               </motion.p>
             ))}
           </motion.div>

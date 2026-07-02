@@ -64,7 +64,7 @@ export function DashboardNav({ user }: { user?: string }) {
       )}
 
       {/* Desktop / tablet: persistent numbered sidebar */}
-      <aside className="no-scrollbar hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto border-r border-border px-7 py-10 sm:flex">
+      <aside className="no-scrollbar hidden h-dvh w-60 shrink-0 flex-col overflow-y-auto  px-7 py-10 sm:flex">
         <div className="mb-10">
           <p className="text-lg font-semibold tracking-tight">
             Dashboard<span className="text-accent">.</span>
@@ -72,7 +72,7 @@ export function DashboardNav({ user }: { user?: string }) {
           {user && <p className="mt-1 font-mono text-xs text-muted">@{user}</p>}
         </div>
 
-        <nav className="flex flex-col gap-4">
+        <nav className="flex flex-col justify-center h-full gap-4">
           {NAV.map((it, i) => {
             const active = pathname === it.href;
             const loading = isPending && target === it.href;
@@ -87,12 +87,12 @@ export function DashboardNav({ user }: { user?: string }) {
                   {num(i)}
                 </span>
                 <span
-                  className={`text-2xl font-semibold tracking-tight transition-[color,transform] duration-200 ease-[var(--ease-out)] ${
+                  className={`text-2xl font-semibold tracking-tight transition-all duration-200 ease-out ${
                     active
-                      ? "text-accent"
+                      ? "text-accent translate-x-1"
                       : loading
-                        ? "text-accent/60"
-                        : "text-foreground/75 group-hover:translate-x-0.5 group-hover:text-foreground"
+                        ? "text-accent/60 translate-x-1"
+                        : "text-foreground/20 translate-x-0 group-hover:translate-x-1 group-hover:text-foreground"
                   }`}
                 >
                   {it.label}
@@ -139,7 +139,7 @@ export function DashboardNav({ user }: { user?: string }) {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3, ease: [0.23, 1, 0.32, 1] }}
-            className="fixed inset-0 z-[60] flex flex-col justify-center bg-accent px-8 text-accent-foreground sm:hidden"
+            className="fixed inset-0 z-60 flex flex-col justify-center bg-accent px-8 text-accent-foreground sm:hidden"
           >
             <button
               onClick={() => setOpen(false)}

@@ -1,8 +1,10 @@
 "use client";
 
-import type { ComponentProps, ReactNode } from "react";
+import { useTransition, type ComponentProps, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { CircleNotch } from "@phosphor-icons/react";
+import { toast } from "./Toast";
+import type { ActionResult } from "./actions";
 
 const fieldBase =
   "w-full rounded-lg border border-border bg-background px-3 py-2 text-sm outline-none focus:border-accent";
@@ -47,11 +49,31 @@ export function SaveButton({ children = "Save" }: { children?: ReactNode }) {
   );
 }
 
-export function DeleteButton({ children = "Delete" }: { children?: ReactNode }) {
-  const { pending } = useFormStatus();
+// Delete as a plain button (not a nested form) so it can sit in the same footer
+// row as SaveButton. Calls the server action directly and toasts the result.
+export function InlineDelete({
+  action,
+  id,
+  children = "Delete",
+}: {
+  action: (prev: ActionResult, formData: FormData) => Promise<ActionResult>;
+  id: string;
+  children?: ReactNode;
+}) {
+  const [pending, start] = useTransition();
+  function onDelete() {
+    start(async () => {
+      const fd = new FormData();
+      fd.set("id", id);
+      const res = await action({ ok: true, message: "" }, fd);
+      if (res.ok) toast.success(res.message);
+      else toast.error(res.message);
+    });
+  }
   return (
     <button
-      type="submit"
+      type="button"
+      onClick={onDelete}
       disabled={pending}
       className="inline-flex w-fit items-center gap-2 rounded-lg border border-border px-3 py-2 text-sm text-muted outline-none transition-[transform,color,border-color] duration-150 ease-[var(--ease-out)] hover:border-accent hover:text-accent active:scale-[0.97] focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:cursor-wait"
     >
